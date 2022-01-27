@@ -1,5 +1,9 @@
 const express = require('express')
 const app = express()
+const cors = require('cors')
+
+app.use(cors())
+
 
 let persons = [
     { 
@@ -24,6 +28,7 @@ let persons = [
     }
 ]
 
+app.use(express.static('build'))
 const generateId = () => {
   const maxId = Math.floor(Math.random()* (10000 - 4) + 4)
   return maxId + 1
@@ -88,7 +93,7 @@ const generateId = () => {
   })
 
 
-  const PORT = 3001
+  const PORT = process.env.PORT || 3001
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
   })
