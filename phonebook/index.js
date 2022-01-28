@@ -1,11 +1,14 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
-
+const mongoose = require('mongoose')
+const persons = require('./models/person')
 app.use(cors())
+app.use(express.static('build'))
+app.use(express.json())
 
-
-let persons = [
+let PERSON = [
     { 
       "id": 1,
       "name": "Arto Hellas", 
@@ -28,44 +31,55 @@ let persons = [
     }
 ]
 
-app.use(express.static('build'))
+
+
 const generateId = () => {
   const maxId = Math.floor(Math.random()* (10000 - 4) + 4)
   return maxId + 1
 }
 
+app.get('/', (req, res) => {
+  res.send('<h1>Welcome to the Phonebook App!</h1>')
+})
 
   app.get('/api/info', (request, response) => {
     response.send('<h1>Phone book has people</h1>')
   })
 
   app.get('/api/persons', (request, response) => {
-    response.json(persons)
-  })
+    persons.find({}).then(people => {
+      response.json(people)})
+    })
   
 
   app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(person => persons.id === id)
-    
-    if (person) {
-      response.json(person)
-    } else {
-      response.status(404).end()
-    }
+    persons.findById(request.params.id).then(person => {
+      if(person){
+        response.json(person)
+      }else{
+        response.status(404).end()
+      }
+    })
   })
 
  
 
   app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    notes = notes.filter(person => person.id !== id)
-    response.status(204).end()
+    persons.findById(request.params.id)
+    .then(person => {
+      person.remove()
+        .then(deletedPerson => {
+          console.log('Deleted: ' + deletedPerson)
+          response.status(204).end()
+        })
+  })
   })
   
+
+
   app.post('/api/persons', (request, response) => {
     const body = request.body
-  
+
     if (!body.name)  {
       return response.status(400).json({ 
         error: 'name is missing' 
@@ -74,24 +88,15 @@ const generateId = () => {
      else if (!body.number) {
         return response.status(400).json({ 
           error: 'number is missing' 
-        })    }
-    else if (!persons.find(person=>person.name ===body.name)) {
-      return res.status(400).json({
-        error: "name must be unique"
-    })
-    }
-  
-    const person = {
+        })}
+
+    const person = new persons({
       name: body.name,
       number: body.number,
       id: generateId(),
-    }
-  
-    persons = persons.concat(person)
-  
-    response.json(person)
+    })
+    person.save().then(savedPerson=> {response.json(savedPerson)})
   })
-
 
   const PORT = process.env.PORT || 3001
   app.listen(PORT, () => {
